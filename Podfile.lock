@@ -1,0 +1,16 @@
+PODS:
+  - TensorFlowLiteTaskVision (0.4.2)
+
+DEPENDENCIES:
+  - TensorFlowLiteTaskVision (= 0.4.2)
+
+SPEC REPOS:
+  trunk:
+    - TensorFlowLiteTaskVision
+
+SPEC CHECKSUMS:
+  TensorFlowLiteTaskVision: c5a0f4d6c220d27fe2f2f83dd04c69dff56d2768
+
+PODFILE CHECKSUM: 4d2555719c404bae16438c5161fdc1752e922c72
+
+COCOAPODS: 1.15.2
