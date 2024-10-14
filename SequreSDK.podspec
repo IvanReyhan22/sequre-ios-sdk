@@ -1,7 +1,7 @@
 Pod::Spec.new do |spec|
 
   spec.name         = "SequreSDK"
-  spec.version      = "1.0.1"
+  spec.version      = "1.0.2"
   spec.summary      = "Sequre Scanner SDK framework."
   spec.description  = "Sequre Scanner SDK framework for Sequre app to detect qr code"
 

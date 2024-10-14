@@ -211,7 +211,13 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
        
         if captureSession.canAddOutput(videoOutput) {
             captureSession.addOutput(videoOutput)
-            videoOutput.connection(with: .video)?.videoOrientation = .portrait
+            
+            if let connection = videoOutput.connection(with: .video){
+                connection.videoOrientation = .portrait
+                if connection.isVideoStabilizationSupported {
+                    connection.preferredVideoStabilizationMode = .auto
+                }
+            }
         } else { return }
        
         /// set screen rect based on device screen
