@@ -17,10 +17,9 @@ public class QRDetectionHelper: NSObject {
 
     override public init() {
         super.init()
-        
-        let frameworkBundle = Bundle(for: SequreSDK.self)
+
 //        guard let modelPath = Bundle.main.path(forResource: "sequre-combine", ofType: "tflite") else {
-        guard let modelPath = frameworkBundle.path(forResource: "sequre-v2-od", ofType: "tflite") else {
+        guard let modelPath = Bundle.main.path(forResource: "sequre-v2-od", ofType: "tflite") else {
             fatalError("Failed to load the model file")
         }
 

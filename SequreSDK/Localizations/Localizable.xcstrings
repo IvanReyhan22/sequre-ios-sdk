@@ -12,19 +12,48 @@
         }
       }
     },
-    "Hold tight while we process your QR" : {
-      "extractionState" : "stale",
+    "Image not found in SequreSDKAssets bundle" : {
       "localizations" : {
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mohon tunggu sebentar sementara kami memproses QR Anda."
+            "value" : "Image not found in SequreSDKAssets bundle"
           }
         }
       }
     },
-    "Image not found in SequreSDKAssets bundle" : {
-
+    "Max zoom reached" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pembesaran maksimum tercapai"
+          }
+        }
+      }
+    },
+    "Min zoom reached" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pembesaran minimum tercapai"
+          }
+        }
+      }
+    },
+    "Network Error! Please check your connection." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network Error! Please check your connection."
+          }
+        }
+      }
     },
     "Object out of the area" : {
       "comment" : "Object out of the area",
@@ -37,19 +66,15 @@
         }
       }
     },
-    "Processing your QR..." : {
-      "extractionState" : "stale",
+    "SequreSDKAssets bundle not found" : {
       "localizations" : {
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Memproses QR Anda..."
+            "value" : "SequreSDKAssets bundle not found"
           }
         }
       }
-    },
-    "SequreSDKAssets bundle not found" : {
-
     },
     "Too Close" : {
       "comment" : "Too Close",

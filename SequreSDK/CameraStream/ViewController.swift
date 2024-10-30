@@ -32,7 +32,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
     
     /// camera overlay
     /// initialize qr bounding box view (corner indicator && border around detected object)
-    private let boundingBoxView = BoundingBoxView()
+    private let boundingBoxView: BoundingBoxView
     
     /// initialize camera QR overlay
     private let scanQROverlay = ScanQROverlay()
@@ -85,7 +85,8 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         hasFlash: Binding<Bool>,
         isFlashActive: Binding<Bool>,
         isCapturing: Binding<Bool>,
-        distanceResult: Binding<DistanceResult>
+        distanceResult: Binding<DistanceResult>,
+        isDebugLayout: Bool
     ) {
         self._imageSource = imageSource
         self.detectedObjectData = detectedObjectData
@@ -93,6 +94,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         self._isFlashActive = isFlashActive
         self._isCapturing = isCapturing
         self._distanceResult = distanceResult
+        self.boundingBoxView = BoundingBoxView(isDebugLayout: isDebugLayout)
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -116,6 +118,16 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             self.setupCaptureSession()
             self.captureSession.startRunning()
         }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        if isFlashActive {
+            toggleFlash(on: false)
+        }
+        
+        stopSession()
     }
     
     private func setupUI() {
@@ -211,13 +223,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
        
         if captureSession.canAddOutput(videoOutput) {
             captureSession.addOutput(videoOutput)
-            
-            if let connection = videoOutput.connection(with: .video){
-                connection.videoOrientation = .portrait
-                if connection.isVideoStabilizationSupported {
-                    connection.preferredVideoStabilizationMode = .auto
-                }
-            }
+            videoOutput.connection(with: .video)?.videoOrientation = .portrait
         } else { return }
        
         /// set screen rect based on device screen

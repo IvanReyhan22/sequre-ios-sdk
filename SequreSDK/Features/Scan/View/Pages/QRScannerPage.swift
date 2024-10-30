@@ -5,6 +5,7 @@
 //  Created by IceQwen on 03/10/24.
 //
 
+import AVFoundation
 import Foundation
 import SwiftUI
 import TensorFlowLiteTaskVision
@@ -20,7 +21,7 @@ public struct QRScannerPage: View {
     @State private var capturing: Bool = false
     
     /// control to turn on / off flash
-    @State private var isFlashActive: Bool = true
+    @State var isFlashActive: Bool = true
     /// indicate wether device support flash
     @State private var hasFlash: Bool = true
     
@@ -33,22 +34,35 @@ public struct QRScannerPage: View {
     /// controll loading sheet
     @State private var isLoading: Bool = false
     
+    var isDebugLayout: Bool
+    
     @StateObject private var viewModel = SDKScanViewModel()
     
     /// return status dialog scan
-    public var onQRResult: (StatusDialogScan) -> Void
-    
+    public var onQRResult: (StatusDialogScan?) -> Void
+    public var returnScanModel: ((String, UIImage) -> Void)?
+
     @Binding var restartSession: Bool
     @Binding var pauseSession: Bool
+
+    @State var showNetworkError: Bool = false
+    @State var showMaxLimit: Bool = false
+    @State var showMinLimit: Bool = false
+    @State var countMaxLimit: Int8 = 0
+    @State var countMinLimit: Int8 = 0
     
     public init(
         restartSession: Binding<Bool>,
         pauseSession: Binding<Bool>,
-        onQRResult: @escaping (StatusDialogScan) -> Void
+        onQRResult: @escaping (StatusDialogScan?) -> Void,
+        isDebugLayout: Bool = false,
+        returnScanModel: ((String, UIImage) -> Void)? = nil
     ) {
-        self.onQRResult = onQRResult
         self._restartSession = restartSession
         self._pauseSession = pauseSession
+        self.onQRResult = onQRResult
+        self.returnScanModel = returnScanModel
+        self.isDebugLayout = isDebugLayout
     }
     
     public var body: some View {
@@ -62,7 +76,8 @@ public struct QRScannerPage: View {
                     hasFlash: $hasFlash,
                     isCapturing: $capturing,
                     zoomLevel: $zoomLevel,
-                    distanceResult: $distanceResult
+                    distanceResult: $distanceResult,
+                    isDebugLayout: isDebugLayout
                 )
                 
                 /// flash and version control
@@ -83,28 +98,20 @@ public struct QRScannerPage: View {
                                 isFlashActive.toggle()
                             } label: {
                                 if let bundleURL = Bundle(for: SequreSDK.self).url(forResource: "SequreSDKAssets", withExtension: "bundle"),
-                                   let bundle = Bundle(url: bundleURL) {
+                                   let bundle = Bundle(url: bundleURL)
+                                {
                                     // Bundle found, now try to load the image
                                     if let image = UIImage(named: isFlashActive ? "icFlashActive" : "icFlashInactive", in: bundle, compatibleWith: nil) {
                                         Image(uiImage: image)
                                             .frame(width: 82)
-                                    } else {
-                                        Text("Image not found in SequreSDKAssets bundle").foregroundColor(.white)
-//                                        print("Image not found in SequreSDKAssets bundle")
                                     }
-                                } else {
-                                    Text("SequreSDKAssets bundle not found").foregroundColor(.white)
-//                                    print("SequreSDKAssets bundle not found")
                                 }
-
-//                                Image(isFlashActive ? "icFlashActive" : "icFlashInactive", bundle: bundle)
-//                                    .frame(width: 82)
-                                
                             }
                         }
                     }
                     .padding(.leading, 18)
                     .padding(.trailing, 0)
+                    
                     Spacer()
                 }
                 .padding(.top, geo.safeAreaInsets.top + 50)
@@ -122,6 +129,45 @@ public struct QRScannerPage: View {
                 capturing = false
                 zoomLevel = 3
                 restartSession = false
+                countMaxLimit = 0
+                countMinLimit = 0
+            }
+        }
+        .toast("Max zoom reached", isShowing: $showMaxLimit)
+        .toast("Min zoom reached", isShowing: $showMinLimit)
+        .toast("Network Error! Please check your connection.", isShowing: $showNetworkError)
+    }
+    
+    private func handleZoomLevel() {
+        var maxZoom: CGFloat = 5
+        var minZoom: CGFloat = 1
+        
+        if let deviceIn = AVCaptureDevice.default(for: .video) {
+            maxZoom = deviceIn.maxAvailableVideoZoomFactor
+            minZoom = deviceIn.minAvailableVideoZoomFactor
+        }
+        
+        if distanceResult == DistanceResult.tooClose {
+            if minZoom < zoomLevel {
+                zoomLevel -= 0.1
+            } else if countMaxLimit == 0 {
+                showMaxLimit = true
+                countMaxLimit += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                    countMaxLimit = 0
+                }
+            }
+        }
+        
+        if distanceResult == DistanceResult.tooFar {
+            if maxZoom > zoomLevel {
+                zoomLevel += 0.1
+            } else if countMinLimit == 0 {
+                showMinLimit = true
+                countMinLimit += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                    countMinLimit = 0
+                }
             }
         }
     }
@@ -139,48 +185,69 @@ public struct QRScannerPage: View {
         
         if distanceResult == DistanceResult.tooClose || distanceResult == DistanceResult.tooFar {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                if distanceResult == DistanceResult.tooClose || distanceResult == DistanceResult.tooFar {
-                    self.zoomLevel += (distanceResult == .tooFar) ? 0.3 : -0.3
-                    // self.zoomLevel += (distanceResult == .tooFar) ? 0.4 : -0.4
-                }
+//                if distanceResult == DistanceResult.tooClose || distanceResult == DistanceResult.tooFar {
+//                    self.zoomLevel += (distanceResult == .tooFar) ? 0.1 : -0.1
+//                }
+                handleZoomLevel()
             }
             return
         }
         
         if distanceResult == .notDetected {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                zoomLevel = 3
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                if zoomLevel == 3 {
+                    return
+                }
+                if zoomLevel > 3 {
+                    zoomLevel -= 0.1
+                } else if zoomLevel < 3 {
+                    zoomLevel += 0.1
+                }
             }
         }
         
         if distanceResult == DistanceResult.optimal {
             capturing = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 guard let boundingBox = self.detectedObjectData.detectedObjects.first?.boundingBox else {
                     distanceResult = .notDetected
-                    zoomLevel = 3
                     capturing = false
                     return
                 }
-                
-                isLoading = true
                 if !isImageCropped, let image = originalImage, capturing {
                     croppedImage = cropImage(image: image, boundingBox: boundingBox)
                     
                     if let croppedImage = croppedImage {
                         isImageCropped = true
-                        
+
                         if let imageUrl = saveImageToDocuments(croppedImage) {
-                            viewModel.uploadImage(
-                                imageFile: imageUrl,
-                                onPostExecuted: {
-                                    distanceResult = .notDetected
-                                    isFlashActive = false
-                                }
-                            ) { dialogStatus in
+                            let isInvalid = viewModel.checkInvalidQrImage(from: imageUrl)
+                            if isInvalid {
+                                capturing = false
+                                distanceResult = .blur
                                 isImageCropped = false
-                                isLoading = false
-                                onQRResult(dialogStatus)
+                            } else {
+                                isLoading = true
+                                viewModel.uploadImage(
+                                    imageFile: imageUrl,
+                                    onPostExecuted: {
+                                        distanceResult = .notDetected
+                                        isFlashActive = false
+                                    },
+                                    returnScanModel: { model in
+                                        returnScanModel?(model.displayInfo(), croppedImage)
+                                    }
+                                ) { dialogStatus in
+                                    if dialogStatus == nil {
+                                        withAnimation {
+                                            showNetworkError = true
+                                            restartSession = true
+                                        }
+                                    }
+                                    isImageCropped = false
+                                    isLoading = false
+                                    onQRResult(dialogStatus)
+                                }
                             }
                         }
                     }

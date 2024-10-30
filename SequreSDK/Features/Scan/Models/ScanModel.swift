@@ -5,6 +5,26 @@
 //  Created by admin on 18/09/24.
 //
 
+extension ScanModel {
+    func displayInfo() -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes] // Menghindari escape character
+        
+        do {
+            let jsonData = try encoder.encode(self)
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                return jsonString
+            } else {
+                return "Error encoding JSON"
+            }
+        } catch {
+            return "Error encoding ScanModel: \(error.localizedDescription)"
+        }
+    }
+}
+
+
+
 import Foundation
 
 public struct ScanModel: Codable {
